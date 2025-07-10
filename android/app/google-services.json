@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "488626321025",
+    "project_id": "sheetal-9c46f",
+    "storage_bucket": "sheetal-9c46f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488626321025:android:381bb56adf9f6fa98e7f80",
+        "android_client_info": {
+          "package_name": "com.example.sheetal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_xYi3dIVWMFz1EUMuccJm2DQRsL1ey6M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
