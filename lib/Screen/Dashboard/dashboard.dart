@@ -33,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double profit = 0.0;
   double netProfit = 0.0;
   double totalPurchase = 0.0;
+  double totalDiscount = 0.0;
   bool isLoading = true;
   List<Map<String, dynamic>> reminders = [];
   List<Category> categories = [];
@@ -40,6 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> collections = [];
   List<dynamic> expenses = [];
   List<dynamic> purchases = [];
+  List<dynamic> discounts = [];
   final FirebaseService _firebaseService = FirebaseService();
   int _currentSwipePage = 0;
 
@@ -48,6 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _filteredCollections = [];
   List<dynamic> _filteredExpenses = [];
   List<dynamic> _filteredPurchases = [];
+  List<dynamic> _filteredDiscounts = [];
 
   String _getAppBarTitle() {
     switch (_currentSwipePage) {
@@ -120,6 +123,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       });
 
+      _firebaseService.getDiscounts().listen((discountList) {
+        setState(() {
+          discounts = discountList;
+          _applyDateFilter();
+        });
+      });
+
       await _loadReminders();
     } catch (e) {
       log('Error loading dashboard data: $e');
@@ -136,6 +146,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _filteredCollections = List.from(collections);
       _filteredExpenses = List.from(expenses);
       _filteredPurchases = List.from(purchases);
+      _filteredDiscounts = List.from(discounts);
     } else {
       _filteredInvoices =
           invoices.where((invoice) => _isInDateRange(invoice.date)).toList();
@@ -148,8 +159,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _filteredPurchases = purchases
           .where((purchase) => _isInDateRange(purchase.date ?? ''))
           .toList();
+      _filteredDiscounts = discounts
+          .where((discount) => _isInDateRange(_coerceDiscountDateString(discount)))
+          .toList();
     }
     _calculateFilteredTotals();
+  }
+
+  String _coerceDiscountDateString(dynamic discount) {
+    // discount.month is 'MMMM yyyy' like 'September 2025'; treat as 1st of that month
+    try {
+      final monthStr = discount.month as String?;
+      if (monthStr == null || monthStr.isEmpty) return '';
+      final parsed = DateFormat('MMMM yyyy').parse(monthStr);
+      return DateFormat('dd/MM/yyyy').format(DateTime(parsed.year, parsed.month, 1));
+    } catch (_) {
+      return '';
+    }
   }
 
   void _calculateFilteredTotals() {
@@ -173,11 +199,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       purchase += purch.amount;
     }
 
+    double discountSum = 0.0;
+    for (var d in _filteredDiscounts) {
+      discountSum += d.amount;
+    }
+
     setState(() {
       totalRevenue = revenue;
       totalCollection = collection;
       totalExpenses = expense;
       totalPurchase = purchase;
+      totalDiscount = discountSum;
       _calculateCategoryBasedProfit();
     });
   }
@@ -270,6 +302,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _calculateNetProfit() {
+    // Net profit = profit - expenses (discount is visual only in bubble)
     netProfit = profit - totalExpenses;
   }
 
@@ -398,6 +431,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         totalCollection: totalCollection,
                         totalExpenses: totalExpenses,
                         totalPurchase: totalPurchase,
+                        totalDiscount: totalDiscount,
                         profit: profit,
                         netProfit: netProfit,
                         invoices: invoices,

@@ -344,4 +344,10 @@ class AppStrings {
   static const String invoiceamount = 'Invoice Amount';
   static const String nopendingcollections = 'No Pending Collections';
   static const String portfolio = 'Portfolio';
+  // Discount module
+  static const String discount = 'Discount';
+  static const String adddiscount = 'Add Discount';
+  static const String editdiscount = 'Edit Discount';
+  static const String discountdetails = 'Discount Details';
+  static const String nodiscountfound = 'No Discount Found';
 }

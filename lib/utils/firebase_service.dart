@@ -9,6 +9,7 @@ import 'package:sheetal/Screen/Sheetal/category/category.dart';
 import 'package:sheetal/Screen/Sheetal/collection/collection.dart';
 import 'package:sheetal/Screen/Sheetal/customer/customer_module.dart';
 import 'package:sheetal/Screen/Sheetal/expense/expense.dart';
+import 'package:sheetal/Screen/Sheetal/discount/discount.dart';
 
 class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -47,6 +48,9 @@ class FirebaseService {
 
   CollectionReference? get bankCollection =>
       sheetalCollection?.doc('data').collection('bank');
+
+  CollectionReference? get discountCollection =>
+      sheetalCollection?.doc('data').collection('discount');
 
   Future<UserCredential> registerUser(
       String email, String password, Map<String, dynamic> userData) async {
@@ -390,6 +394,78 @@ class FirebaseService {
         return Expense.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();
     });
+  }
+
+  // Get all discounts
+  Stream<List<Discount>> getDiscounts() {
+    if (discountCollection == null) {
+      return Stream.value([]);
+    }
+
+    return discountCollection!
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
+  }
+
+  // Add a new discount
+  Future<String?> addDiscount(Discount discount) async {
+    if (discountCollection == null) return null;
+
+    try {
+      DocumentReference docRef =
+          await discountCollection!.add(discount.toMap());
+      return docRef.id;
+    } catch (e) {
+      log('Error adding discount: $e');
+      return null;
+    }
+  }
+
+  // Update an existing discount
+  Future<bool> updateDiscount(Discount discount) async {
+    if (discountCollection == null || discount.id == null) return false;
+
+    try {
+      await discountCollection!.doc(discount.id).update(discount.toMap());
+      return true;
+    } catch (e) {
+      log('Error updating discount: $e');
+      return false;
+    }
+  }
+
+  // Delete a discount
+  Future<bool> deleteDiscount(String discountId) async {
+    if (discountCollection == null) return false;
+
+    try {
+      await discountCollection!.doc(discountId).delete();
+      return true;
+    } catch (e) {
+      log('Error deleting discount: $e');
+      return false;
+    }
+  }
+
+  // Get a single discount by ID
+  Future<Discount?> getDiscountById(String discountId) async {
+    if (discountCollection == null) return null;
+
+    try {
+      DocumentSnapshot doc = await discountCollection!.doc(discountId).get();
+      if (doc.exists) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    } catch (e) {
+      log('Error getting discount: $e');
+      return null;
+    }
   }
 
   // Add a new expense

@@ -14,6 +14,7 @@ class SwipableDashboardCards extends StatefulWidget {
   final double totalCollection;
   final double totalExpenses;
   final double totalPurchase;
+  final double totalDiscount;
   final double profit;
   final double netProfit;
   final List<Invoice> invoices;
@@ -29,6 +30,7 @@ class SwipableDashboardCards extends StatefulWidget {
     required this.totalCollection,
     required this.totalExpenses,
     required this.totalPurchase,
+    required this.totalDiscount,
     required this.profit,
     required this.netProfit,
     required this.invoices,
@@ -107,6 +109,7 @@ class _SwipableDashboardCardsState extends State<SwipableDashboardCards> {
                 totalCollection: widget.totalCollection,
                 totalExpenses: widget.totalExpenses,
                 totalPurchase: widget.totalPurchase,
+                totalDiscount: widget.totalDiscount,
                 profit: widget.profit,
                 netProfit: widget.netProfit,
               ),

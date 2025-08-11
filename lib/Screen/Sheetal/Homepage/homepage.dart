@@ -15,6 +15,7 @@ import '../Invoices/invoice_list.dart';
 import '../collection/collection_list.dart';
 import '../expense/expense_list.dart';
 import '../purchase/purchase_list.dart'; // Add this import
+import '../discount/discount_list.dart';
 
 class SheetalScreen extends StatefulWidget {
   final bool isInTabView;
@@ -33,6 +34,7 @@ class _SheetalScreenState extends State<SheetalScreen> {
   int expenseCount = 0;
   int bankCount = 0;
   int purchaseCount = 0;
+  int discountCount = 0;
   bool isLoading = true;
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -93,6 +95,13 @@ class _SheetalScreenState extends State<SheetalScreen> {
       _firebaseService.getPurchases().listen((purchases) {
         setState(() {
           purchaseCount = purchases.length;
+        });
+      });
+
+      // Load discounts count
+      _firebaseService.getDiscounts().listen((discounts) {
+        setState(() {
+          discountCount = discounts.length;
         });
       });
     } catch (e) {
@@ -276,7 +285,23 @@ class _SheetalScreenState extends State<SheetalScreen> {
                         ),
                       ),
                       const SizedBox(width: 25),
-                      Expanded(child: Container(),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const DiscountListScreen(),
+                              ),
+                            ).then((_) => _loadSheetalData());
+                          },
+                          child: buildCard(
+                            value: discountCount.toString(),
+                            subtitle: AppStrings.discount,
+                            icon: Icons.percent,
+                            hideCurrencySymbol: true,
+                          ),
+                        ),
                       ),
                     ],
                   ),

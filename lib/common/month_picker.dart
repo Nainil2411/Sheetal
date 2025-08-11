@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sheetal/common/custom_color.dart';
+
+// Public helper to show a Month/Year picker dialog and return the selected month
+Future<DateTime?> showMonthYearPicker(BuildContext context,
+    {DateTime? initialDate, DateTime? latestAllowed}) {
+  final DateTime now = DateTime.now();
+  final DateTime latest = DateTime(
+    (latestAllowed ?? now).year,
+    (latestAllowed ?? now).month,
+  );
+  final DateTime init = initialDate ?? now;
+  return showDialog<DateTime>(
+    context: context,
+    builder: (BuildContext context) {
+      return _MonthYearPickerDialog(
+        initialDate: init,
+        latestAllowed: latest,
+      );
+    },
+  );
+}
 
 class MonthPickerWidget extends StatelessWidget {
   final DateTime selectedDate;
@@ -13,11 +34,16 @@ class MonthPickerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final DateTime now = DateTime.now();
+    final DateTime latestAllowed = DateTime(now.year, now.month);
+    final bool canGoNext = DateTime(selectedDate.year, selectedDate.month)
+        .isBefore(latestAllowed);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: CustomColors.background,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: CustomColors.textSecondary.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -37,28 +63,36 @@ class MonthPickerWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: CustomColors.background,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(
+                  color: CustomColors.textSecondary.withOpacity(0.3),
+                ),
               ),
               child: Text(
                 DateFormat('MMMM yyyy').format(selectedDate),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
+                  color: CustomColors.textPrimary,
                 ),
               ),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
-            onPressed: () {
-              final nextMonth = DateTime(
-                selectedDate.year,
-                selectedDate.month + 1,
-              );
-              onMonthChanged(nextMonth);
-            },
+            onPressed: canGoNext
+                ? () {
+                    final nextMonth = DateTime(
+                      selectedDate.year,
+                      selectedDate.month + 1,
+                    );
+                    if (!DateTime(nextMonth.year, nextMonth.month)
+                        .isAfter(latestAllowed)) {
+                      onMonthChanged(nextMonth);
+                    }
+                  }
+                : null,
           ),
         ],
       ),
@@ -69,7 +103,10 @@ class MonthPickerWidget extends StatelessWidget {
     final DateTime? picked = await showDialog<DateTime>(
       context: context,
       builder: (BuildContext context) {
-        return _MonthYearPickerDialog(initialDate: selectedDate);
+        return _MonthYearPickerDialog(
+          initialDate: selectedDate,
+          latestAllowed: DateTime.now(),
+        );
       },
     );
 
@@ -81,8 +118,9 @@ class MonthPickerWidget extends StatelessWidget {
 
 class _MonthYearPickerDialog extends StatefulWidget {
   final DateTime initialDate;
+  final DateTime latestAllowed;
 
-  const _MonthYearPickerDialog({required this.initialDate});
+  const _MonthYearPickerDialog({required this.initialDate, required this.latestAllowed});
 
   @override
   State<_MonthYearPickerDialog> createState() => _MonthYearPickerDialogState();
@@ -95,14 +133,21 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
   @override
   void initState() {
     super.initState();
-    selectedYear = widget.initialDate.year;
-    selectedMonth = widget.initialDate.month;
+    final DateTime latest = DateTime(widget.latestAllowed.year, widget.latestAllowed.month);
+    final DateTime init = DateTime(widget.initialDate.year, widget.initialDate.month);
+    final DateTime coerced = init.isAfter(latest) ? latest : init;
+    selectedYear = coerced.year;
+    selectedMonth = coerced.month;
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Select Month & Year'),
+      backgroundColor: CustomColors.background,
+      title: const Text(
+        'Select Month & Year',
+        style: TextStyle(color: CustomColors.textPrimary),
+      ),
       content: SizedBox(
         width: 300,
         height: 200,
@@ -112,7 +157,11 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Year:', style: TextStyle(fontSize: 16)),
+                const Text('Year:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: CustomColors.textPrimary,
+                    )),
                 Row(
                   children: [
                     IconButton(
@@ -128,14 +177,21 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: CustomColors.textPrimary,
                       ),
                     ),
                     IconButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedYear++;
-                        });
-                      },
+                      onPressed: selectedYear < widget.latestAllowed.year
+                          ? () {
+                              setState(() {
+                                selectedYear++;
+                                if (selectedYear == widget.latestAllowed.year &&
+                                    selectedMonth > widget.latestAllowed.month) {
+                                  selectedMonth = widget.latestAllowed.month;
+                                }
+                              });
+                            }
+                          : null,
                       icon: const Icon(Icons.chevron_right),
                     ),
                   ],
@@ -157,24 +213,41 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
                   final month = index + 1;
                   final monthName = DateFormat('MMM').format(DateTime(2023, month));
                   final isSelected = month == selectedMonth;
+                  final bool isDisabled = selectedYear > widget.latestAllowed.year ||
+                      (selectedYear == widget.latestAllowed.year &&
+                          month > widget.latestAllowed.month);
 
                   return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedMonth = month;
-                      });
-                    },
+                    onTap: isDisabled
+                        ? null
+                        : () {
+                            setState(() {
+                              selectedMonth = month;
+                            });
+                          },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[200],
+                        color: isSelected
+                            ? CustomColors.textPrimary
+                            : CustomColors.background,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDisabled
+                              ? CustomColors.textSecondary.withOpacity(0.2)
+                              : CustomColors.textSecondary.withOpacity(0.3),
+                        ),
                       ),
                       child: Center(
                         child: Text(
                           monthName,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? CustomColors.background
+                                : isDisabled
+                                    ? CustomColors.textSecondary.withOpacity(0.5)
+                                    : CustomColors.textPrimary,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -189,13 +262,15 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: const Text('Cancel',
+              style: TextStyle(color: CustomColors.textPrimary)),
         ),
         TextButton(
           onPressed: () {
             Navigator.of(context).pop(DateTime(selectedYear, selectedMonth));
           },
-          child: const Text('OK'),
+          child: const Text('OK',
+              style: TextStyle(color: CustomColors.textPrimary)),
         ),
       ],
     );

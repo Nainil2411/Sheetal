@@ -7,6 +7,7 @@ class BubbleVisualization extends StatelessWidget {
   final double totalCollection;
   final double totalExpenses;
   final double totalPurchase;
+  final double totalDiscount;
   final double profit;
   final double netProfit;
 
@@ -16,6 +17,7 @@ class BubbleVisualization extends StatelessWidget {
     required this.totalCollection,
     required this.totalExpenses,
     required this.totalPurchase,
+    required this.totalDiscount,
     required this.profit,
     required this.netProfit,
   });
@@ -26,6 +28,7 @@ class BubbleVisualization extends StatelessWidget {
       totalRevenue.abs(),
       totalCollection.abs(),
       totalPurchase.abs(),
+      totalDiscount.abs(),
       netProfit.abs(),
     ];
 
@@ -34,6 +37,7 @@ class BubbleVisualization extends StatelessWidget {
     final double collectionSize =
         _calculateBubbleSize(totalCollection, maxValue);
     final double purchaseSize = _calculateBubbleSize(totalPurchase, maxValue);
+    final double discountSize = _calculateBubbleSize(totalDiscount, maxValue);
     final double netProfitSize = _calculateBubbleSize(netProfit, maxValue);
 
     return Container(
@@ -70,12 +74,23 @@ class BubbleVisualization extends StatelessWidget {
                 // Purchase bubble
                 Positioned(
                   left: 50,
-                  bottom: 60,
+                  bottom: 10,
                   child: _buildBubble(
                     size: purchaseSize,
                     color: CustomColors.textPrimary.withOpacity(0.5),
                     label: 'Purchase',
                     value: totalPurchase,
+                  ),
+                ),
+                // Discount bubble
+                Positioned(
+                  left: 170,
+                  bottom: 100,
+                  child: _buildBubble(
+                    size: discountSize,
+                    color: CustomColors.textPrimary.withOpacity(0.45),
+                    label: 'Discount',
+                    value: totalDiscount,
                   ),
                 ),
                 // Net Profit bubble
@@ -165,6 +180,12 @@ class BubbleVisualization extends StatelessWidget {
           color: CustomColors.textPrimary.withOpacity(0.5),
           label: 'Purchase',
           value: totalPurchase,
+        ),
+        const SizedBox(height: 8),
+        _buildLegendItem(
+          color: CustomColors.textPrimary.withOpacity(0.45),
+          label: 'Discount',
+          value: totalDiscount,
         ),
         const SizedBox(height: 8),
         _buildLegendItem(
