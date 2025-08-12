@@ -34,7 +34,7 @@ class _AddDiscountScreenState extends State<AddDiscountScreen> {
     super.dispose();
   }
 
-  Future<void> _pickMonth() async {
+   Future<void> _pickMonth() async {
     final now = DateTime.now();
     final picked = await showMonthYearPicker(
       context,

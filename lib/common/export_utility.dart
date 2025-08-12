@@ -7,6 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:sheetal/Screen/Sheetal/collection/collection.dart';
 import 'package:sheetal/Screen/Sheetal/Invoices/invoice.dart';
+import 'package:sheetal/Screen/Sheetal/expense/expense.dart';
+import 'package:sheetal/common/export_progress_dialog.dart';
 import 'package:intl/intl.dart';
 
 class ExportUtility {
@@ -16,7 +18,7 @@ class ExportUtility {
     required ExportConfig<T> config,
     String? dateRangeText,
   }) async {
-    print('Export started with ${data.length} items'); // Debug log
+    print('Export started with ${data.length} items');
 
     if (data.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -28,20 +30,19 @@ class ExportUtility {
       return;
     }
 
-    // Show loading dialog
+    // Show progress dialog
+    final ValueNotifier<int> progressNotifier = ValueNotifier<int>(0);
+    final int totalSteps = 3 + data.length; // headers, rows loop, save
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const AlertDialog(
-          content: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Text('Exporting to Excel...'),
-            ],
-          ),
+      builder: (BuildContext dialogContext) {
+        return ExportProgressDialog(
+          totalItems: totalSteps,
+          currentProgressNotifier: progressNotifier,
+          onCancel: () {
+            Navigator.of(dialogContext).pop();
+          },
         );
       },
     );
@@ -60,20 +61,22 @@ class ExportUtility {
         return;
       }
 
-      print('Permissions granted, creating Excel file...'); // Debug log
+      print('Permissions granted, creating Excel file...');
 
-      // Create Excel file
+      // Step 1: Create Excel file
       var excel = Excel.createExcel();
       Sheet sheetObject = excel['Sheet1'];
+      progressNotifier.value = 1;
 
-      // Add title
+      // Step 2: Add title
       var titleCell = sheetObject.cell(CellIndex.indexByString("A1"));
       titleCell.value = TextCellValue(config.title);
       titleCell.cellStyle = CellStyle(bold: true, fontSize: 16);
 
       int currentRow = 2;
+      progressNotifier.value = 2;
 
-      // Add date range if provided
+      // Step 3: Add date range if provided
       if (dateRangeText != null && dateRangeText.isNotEmpty) {
         var dateCell = sheetObject.cell(CellIndex.indexByString("A$currentRow"));
         dateCell.value = TextCellValue('Date Range: $dateRangeText');
@@ -81,20 +84,21 @@ class ExportUtility {
         currentRow++;
       }
 
-      // Add export date
+      // Step 4: Add export date
       var exportDateCell = sheetObject.cell(CellIndex.indexByString("A$currentRow"));
       exportDateCell.value = TextCellValue('Exported on: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}');
       currentRow += 2; // Skip a row
 
-      // Add headers
+      // Step 5: Add headers
       List<String> headers = config.headers;
       for (int i = 0; i < headers.length; i++) {
         var headerCell = sheetObject.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: currentRow - 1));
         headerCell.value = TextCellValue(headers[i]);
         headerCell.cellStyle = CellStyle(bold: true, backgroundColorHex: ExcelColor.grey);
       }
+      progressNotifier.value = 3;
 
-      // Add data rows
+      // Step 6: Add data rows
       int serialNumber = 1;
       for (final item in data) {
         final rowData = config.getRowData(item);
@@ -114,9 +118,10 @@ class ExportUtility {
         }
         currentRow++;
         serialNumber++;
+        progressNotifier.value = (3 + serialNumber - 1).clamp(0, totalSteps);
       }
 
-      // Add total row if applicable
+      // Step 7: Add total row if applicable
       if (config.showTotal) {
         currentRow++; // Skip a row
 
@@ -130,9 +135,9 @@ class ExportUtility {
         totalAmountCell.cellStyle = CellStyle(bold: true);
       }
 
-      print('Excel file created, saving...'); // Debug log
+      print('Excel file created, saving...');
 
-      // Get directory and save file
+      // Step 8: Get directory and save file
       Directory? directory;
       if (Platform.isAndroid) {
         directory = await getExternalStorageDirectory();
@@ -145,27 +150,30 @@ class ExportUtility {
       final fileName = '${config.fileName}_$timestamp.xlsx';
       final filePath = '${directory.path}/$fileName';
 
-      print('Saving file to: $filePath'); // Debug log
+      print('Saving file to: $filePath');
 
       final file = File(filePath);
       List<int>? fileBytes = excel.encode();
       if (fileBytes != null) {
         await file.writeAsBytes(fileBytes);
-        print('File saved successfully'); // Debug log
+        print('File saved successfully');
       } else {
         throw Exception('Failed to encode Excel file');
       }
 
-      // Close loading dialog
+      // finalize progress
+      progressNotifier.value = totalSteps;
+
+      // Close progress dialog
       Navigator.of(context).pop();
 
       // Show success dialog
       _showExportSuccessDialog(context, filePath, fileName);
 
     } catch (e) {
-      print('Export error: $e'); // Debug log
+      print('Export error: $e');
 
-      // Close loading dialog if open
+      // Close progress dialog if open
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop();
       }
@@ -287,6 +295,7 @@ abstract class ExportConfig<T> {
 class ExportConfigs {
   static final collectionConfig = CollectionExportConfig();
   static final invoiceConfig = InvoiceExportConfig();
+  static final expenseConfig = ExpenseExportConfig();
 }
 
 class CollectionExportConfig extends ExportConfig<Collection> {
@@ -364,5 +373,44 @@ class InvoiceExportConfig extends ExportConfig<Invoice> {
   @override
   double calculateTotal(List<Invoice> items) {
     return items.fold(0.0, (sum, invoice) => sum + invoice.amount);
+  }
+}
+
+class ExpenseExportConfig extends ExportConfig<Expense> {
+  @override
+  String get title => 'Expenses Report';
+
+  @override
+  String get fileName => 'expenses_export';
+
+  @override
+  List<String> get headers => [
+        'Sr. No.',
+        'Title',
+        'Amount (₹)',
+        'Date',
+        'Payment Mode',
+      ];
+
+  @override
+  bool get showTotal => true;
+
+  @override
+  int get amountColumnIndex => 2;
+
+  @override
+  List<dynamic> getRowData(Expense expense) {
+    return [
+      '',
+      expense.title,
+      expense.amount,
+      expense.expenseDate ?? '',
+      expense.paymentMode,
+    ];
+  }
+
+  @override
+  double calculateTotal(List<Expense> items) {
+    return items.fold(0.0, (sum, e) => sum + e.amount);
   }
 }

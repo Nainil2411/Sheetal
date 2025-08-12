@@ -10,6 +10,7 @@ import 'package:sheetal/utils/utility.dart';
 import '../Screen/Sheetal/Invoices/invoice.dart';
 import '../Screen/Sheetal/collection/collection.dart';
 import '../Screen/Sheetal/customer/customer_module.dart';
+import '../Screen/Sheetal/expense/expense.dart';
 import '../common/import_progress_dialog.dart';
 import '../utils/firebase_service.dart';
 
@@ -505,6 +506,85 @@ class ImportConfigs {
         // Both name and phone must match to be considered duplicate
         return existing.phone == newData['phone'] &&
             existing.name.toLowerCase() == newData['name']!.toLowerCase();
+      },
+    );
+  }
+
+  static ImportConfig<Expense> get expenseConfig {
+    final firebaseService = FirebaseService();
+
+    return ImportConfig<Expense>(
+      entityName: "expenses",
+      requiredColumns: 4,
+      // Expected columns: Title, Amount, Payment Mode, Date
+      parseRow: (values) async {
+        return {
+          'title': values[0].trim(),
+          'amount': values[1].trim(),
+          'paymentMode': values[2].trim(),
+          'date': values[3].trim(),
+        };
+      },
+      processData: (data) async {
+        try {
+          final amountStr = data['amount'] ?? '0';
+          final amount = amountStr.isEmpty ? 0.0 : double.tryParse(amountStr) ?? 0.0;
+
+          DateTime parsedDate;
+          try {
+            parsedDate = DateFormat('MMM dd yyyy').parseStrict(data['date']!);
+          } catch (_) {
+            try {
+              parsedDate = DateFormat('yyyy-MM-dd').parseStrict(data['date']!);
+            } catch (_) {
+              try {
+                parsedDate = DateFormat('dd/MM/yyyy').parseStrict(data['date']!);
+              } catch (_) {
+                parsedDate = DateTime.now();
+              }
+            }
+          }
+
+          final outputDateFormat = DateFormat('dd/MM/yyyy');
+          final formattedDate = outputDateFormat.format(parsedDate);
+
+          await firebaseService.expenseCollection?.add({
+            'title': data['title'],
+            'amount': amount,
+            'paymentMode': data['paymentMode'],
+            'expenseDate': formattedDate,
+            'createdAt': Timestamp.fromDate(parsedDate),
+          });
+
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getExistingData: () async {
+        try {
+          final snapshot = await firebaseService.expenseCollection!.get();
+          return snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Expense(
+              id: doc.id,
+              title: data['title'] ?? '',
+              amount: (data['amount'] ?? 0.0).toDouble(),
+              paymentMode: data['paymentMode'] ?? 'Cash',
+              expenseDate: data['expenseDate'] ?? '',
+              createdAt: data['createdAt'] ?? Timestamp.now(),
+            );
+          }).toList();
+        } catch (e) {
+          return <Expense>[];
+        }
+      },
+      isDuplicate: (existing, newData) {
+        final newAmount = double.tryParse(newData['amount'] ?? '0') ?? 0.0;
+        final formattedNewDate = _formatDateForComparison(newData['date'] ?? '');
+        return existing.title.toLowerCase() == (newData['title'] ?? '').toLowerCase() &&
+            existing.amount == newAmount &&
+            (existing.expenseDate ?? '') == formattedNewDate;
       },
     );
   }

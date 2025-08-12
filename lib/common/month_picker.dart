@@ -150,7 +150,7 @@ class _MonthYearPickerDialogState extends State<_MonthYearPickerDialog> {
       ),
       content: SizedBox(
         width: 300,
-        height: 200,
+        height: 300,
         child: Column(
           children: [
             // Year picker

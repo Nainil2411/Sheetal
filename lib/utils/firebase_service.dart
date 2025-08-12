@@ -507,6 +507,25 @@ class FirebaseService {
     }
   }
 
+  // Batch delete expenses
+  Future<bool> deleteMultipleExpenses(List<String> expenseIds) async {
+    if (expenseCollection == null) return false;
+
+    try {
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      for (String expenseId in expenseIds) {
+        batch.delete(expenseCollection!.doc(expenseId));
+      }
+
+      await batch.commit();
+      return true;
+    } catch (e) {
+      log('Error deleting multiple expenses: $e');
+      return false;
+    }
+  }
+
   // Get a single expense by ID
   Future<Expense?> getExpenseById(String expenseId) async {
     if (expenseCollection == null) return null;
