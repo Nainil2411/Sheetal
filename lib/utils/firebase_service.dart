@@ -52,6 +52,18 @@ class FirebaseService {
   CollectionReference? get discountCollection =>
       sheetalCollection?.doc('data').collection('discount');
 
+  // Tally deposit approvals per date
+  CollectionReference? get depositApprovalCollection =>
+      sheetalCollection?.doc('data').collection('depositApprovals');
+
+  // New: Scheme collection
+  CollectionReference? get schemeCollection =>
+      sheetalCollection?.doc('data').collection('scheme');
+
+  // New: Credit collection
+  CollectionReference? get creditCollection =>
+      sheetalCollection?.doc('data').collection('credit');
+
   Future<UserCredential> registerUser(
       String email, String password, Map<String, dynamic> userData) async {
     try {
@@ -412,6 +424,140 @@ class FirebaseService {
     });
   }
 
+  // ===== Scheme CRUD =====
+  Stream<List<Discount>> getSchemes() {
+    if (schemeCollection == null) {
+      return Stream.value([]);
+    }
+
+    return schemeCollection!
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
+  }
+
+  Future<String?> addScheme(Discount scheme) async {
+    if (schemeCollection == null) return null;
+
+    try {
+      DocumentReference docRef = await schemeCollection!.add(scheme.toMap());
+      return docRef.id;
+    } catch (e) {
+      log('Error adding scheme: $e');
+      return null;
+    }
+  }
+
+  Future<bool> updateScheme(Discount scheme) async {
+    if (schemeCollection == null || scheme.id == null) return false;
+
+    try {
+      await schemeCollection!.doc(scheme.id).update(scheme.toMap());
+      return true;
+    } catch (e) {
+      log('Error updating scheme: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteScheme(String schemeId) async {
+    if (schemeCollection == null) return false;
+
+    try {
+      await schemeCollection!.doc(schemeId).delete();
+      return true;
+    } catch (e) {
+      log('Error deleting scheme: $e');
+      return false;
+    }
+  }
+
+  Future<Discount?> getSchemeById(String schemeId) async {
+    if (schemeCollection == null) return null;
+
+    try {
+      DocumentSnapshot doc = await schemeCollection!.doc(schemeId).get();
+      if (doc.exists) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    } catch (e) {
+      log('Error getting scheme: $e');
+      return null;
+    }
+  }
+
+  // ===== Credit CRUD =====
+  Stream<List<Discount>> getCredits() {
+    if (creditCollection == null) {
+      return Stream.value([]);
+    }
+
+    return creditCollection!
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
+  }
+
+  Future<String?> addCredit(Discount credit) async {
+    if (creditCollection == null) return null;
+
+    try {
+      DocumentReference docRef = await creditCollection!.add(credit.toMap());
+      return docRef.id;
+    } catch (e) {
+      log('Error adding credit: $e');
+      return null;
+    }
+  }
+
+  Future<bool> updateCredit(Discount credit) async {
+    if (creditCollection == null || credit.id == null) return false;
+
+    try {
+      await creditCollection!.doc(credit.id).update(credit.toMap());
+      return true;
+    } catch (e) {
+      log('Error updating credit: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteCredit(String creditId) async {
+    if (creditCollection == null) return false;
+
+    try {
+      await creditCollection!.doc(creditId).delete();
+      return true;
+    } catch (e) {
+      log('Error deleting credit: $e');
+      return false;
+    }
+  }
+
+  Future<Discount?> getCreditById(String creditId) async {
+    if (creditCollection == null) return null;
+
+    try {
+      DocumentSnapshot doc = await creditCollection!.doc(creditId).get();
+      if (doc.exists) {
+        return Discount.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    } catch (e) {
+      log('Error getting credit: $e');
+      return null;
+    }
+  }
+
   // Add a new discount
   Future<String?> addDiscount(Discount discount) async {
     if (discountCollection == null) return null;
@@ -468,6 +614,72 @@ class FirebaseService {
     }
   }
 
+// ===== Deposit approvals (by date) =====
+  Future<Map<String, dynamic>?> getDepositApprovalByDate(String dateDdMmYyyy) async {
+    if (depositApprovalCollection == null) return null;
+    try {
+      final doc = await depositApprovalCollection!.doc(dateDdMmYyyy).get();
+      if (!doc.exists) return null;
+      return doc.data() as Map<String, dynamic>;
+    } catch (e) {
+      log('Error getDepositApprovalByDate: $e');
+      return null;
+    }
+  }
+
+  Future<bool> setDepositApproval({
+    required String dateDdMmYyyy,
+    bool? cashApproved,
+    bool? onlineApproved,
+    String? cashComment,
+    String? onlineComment,
+  }) async {
+    if (depositApprovalCollection == null) return false;
+    try {
+      final data = <String, dynamic>{
+        if (cashApproved != null) 'cashApproved': cashApproved,
+        if (onlineApproved != null) 'onlineApproved': onlineApproved,
+        if (cashComment != null) 'cashComment': cashComment,
+        if (onlineComment != null) 'onlineComment': onlineComment,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      await depositApprovalCollection!.doc(dateDdMmYyyy).set(data, SetOptions(merge: true));
+      return true;
+    } catch (e) {
+      log('Error setDepositApproval: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteDepositApproval({
+    required String dateDdMmYyyy,
+    bool? deleteCashApproval,
+    bool? deleteOnlineApproval,
+  }) async {
+    if (depositApprovalCollection == null) return false;
+    try {
+      final data = <String, dynamic>{};
+
+      if (deleteCashApproval == true) {
+        data['cashApproved'] = FieldValue.delete();
+        data['cashComment'] = FieldValue.delete();
+      }
+      if (deleteOnlineApproval == true) {
+        data['onlineApproved'] = FieldValue.delete();
+        data['onlineComment'] = FieldValue.delete();
+      }
+
+      if (data.isNotEmpty) {
+        data['updatedAt'] = FieldValue.serverTimestamp();
+        await depositApprovalCollection!.doc(dateDdMmYyyy).update(data);
+      }
+
+      return true;
+    } catch (e) {
+      log('Error deleteDepositApproval: $e');
+      return false;
+    }
+  }
   // Add a new expense
   Future<String?> addSheetaLExpense(Expense expense) async {
     if (expenseCollection == null) return null;

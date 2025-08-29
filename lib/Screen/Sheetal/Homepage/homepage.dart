@@ -16,6 +16,9 @@ import '../collection/collection_list.dart';
 import '../expense/expense_list.dart';
 import '../purchase/purchase_list.dart'; // Add this import
 import '../discount/discount_list.dart';
+import '../tally/tally_list.dart';
+import '../scheme/scheme_list.dart';
+import '../credit/credit_list.dart';
 
 class SheetalScreen extends StatefulWidget {
   final bool isInTabView;
@@ -35,6 +38,8 @@ class _SheetalScreenState extends State<SheetalScreen> {
   int bankCount = 0;
   int purchaseCount = 0;
   int discountCount = 0;
+  int schemeCount = 0;
+  int creditCount = 0;
   bool isLoading = true;
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -102,6 +107,20 @@ class _SheetalScreenState extends State<SheetalScreen> {
       _firebaseService.getDiscounts().listen((discounts) {
         setState(() {
           discountCount = discounts.length;
+        });
+      });
+
+      // Load schemes count
+      _firebaseService.getSchemes().listen((schemes) {
+        setState(() {
+          schemeCount = schemes.length;
+        });
+      });
+
+      // Load credits count
+      _firebaseService.getCredits().listen((credits) {
+        setState(() {
+          creditCount = credits.length;
         });
       });
     } catch (e) {
@@ -303,6 +322,75 @@ class _SheetalScreenState extends State<SheetalScreen> {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SchemeListScreen(),
+                              ),
+                            ).then((_) => _loadSheetalData());
+                          },
+                          child: buildCard(
+                            value: schemeCount.toString(),
+                            subtitle: 'Scheme',
+                            icon: Icons.card_giftcard,
+                            hideCurrencySymbol: true,
+                            isBlackCard: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 25),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreditListScreen(),
+                              ),
+                            ).then((_) => _loadSheetalData());
+                          },
+                          child: buildCard(
+                            value: creditCount.toString(),
+                            subtitle: 'Credit',
+                            icon: Icons.credit_score,
+                            hideCurrencySymbol: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const TallyListScreen(),
+                              ),
+                            );
+                          },
+                          child: buildCard(
+                            hideCurrencySymbol: true,
+                            value: 'Tally',
+                            subtitle: 'Daily Sheet',
+                            icon: Icons.table_chart,
+                            isBlackCard: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 25),
+                      const Expanded(child: SizedBox.shrink()),
                     ],
                   ),
                   const SizedBox(height: 50),

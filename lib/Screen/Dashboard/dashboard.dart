@@ -34,6 +34,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double netProfit = 0.0;
   double totalPurchase = 0.0;
   double totalDiscount = 0.0;
+  double totalScheme = 0.0;
+  double totalCredit = 0.0;
   bool isLoading = true;
   List<Map<String, dynamic>> reminders = [];
   List<Category> categories = [];
@@ -42,6 +44,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> expenses = [];
   List<dynamic> purchases = [];
   List<dynamic> discounts = [];
+  List<dynamic> schemes = [];
+  List<dynamic> credits = [];
   final FirebaseService _firebaseService = FirebaseService();
   int _currentSwipePage = 0;
 
@@ -51,6 +55,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _filteredExpenses = [];
   List<dynamic> _filteredPurchases = [];
   List<dynamic> _filteredDiscounts = [];
+  List<dynamic> _filteredSchemes = [];
+  List<dynamic> _filteredCredits = [];
 
   String _getAppBarTitle() {
     switch (_currentSwipePage) {
@@ -59,10 +65,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 1:
         return 'Financial Overview';
       case 2:
-        return 'Financial Performance';
+        return 'Calculation';
       case 3:
-        return 'Expense Summary';
+        return 'Financial Performance';
       case 4:
+        return 'Expense Summary';
+      case 5:
         return 'Comparison Chart';
       default:
         return AppStrings.dashboard;
@@ -130,6 +138,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       });
 
+      _firebaseService.getSchemes().listen((schemeList) {
+        setState(() {
+          schemes = schemeList;
+          _applyDateFilter();
+        });
+      });
+
+      _firebaseService.getCredits().listen((creditList) {
+        setState(() {
+          credits = creditList;
+          _applyDateFilter();
+        });
+      });
+
       await _loadReminders();
     } catch (e) {
       log('Error loading dashboard data: $e');
@@ -147,6 +169,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _filteredExpenses = List.from(expenses);
       _filteredPurchases = List.from(purchases);
       _filteredDiscounts = List.from(discounts);
+      _filteredSchemes = List.from(schemes);
+      _filteredCredits = List.from(credits);
     } else {
       _filteredInvoices =
           invoices.where((invoice) => _isInDateRange(invoice.date)).toList();
@@ -161,6 +185,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .toList();
       _filteredDiscounts = discounts
           .where((discount) => _isInDateRange(_coerceDiscountDateString(discount)))
+          .toList();
+      _filteredSchemes = schemes
+          .where((scheme) => _isInDateRange(_coerceDiscountDateString(scheme)))
+          .toList();
+      _filteredCredits = credits
+          .where((credit) => _isInDateRange(_coerceDiscountDateString(credit)))
           .toList();
     }
     _calculateFilteredTotals();
@@ -204,12 +234,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       discountSum += d.amount;
     }
 
+    double schemeSum = 0.0;
+    for (var s in _filteredSchemes) {
+      schemeSum += s.amount;
+    }
+
+    double creditSum = 0.0;
+    for (var c in _filteredCredits) {
+      creditSum += c.amount;
+    }
+
     setState(() {
       totalRevenue = revenue;
       totalCollection = collection;
       totalExpenses = expense;
       totalPurchase = purchase;
       totalDiscount = discountSum;
+      totalScheme = schemeSum;
+      totalCredit = creditSum;
       _calculateCategoryBasedProfit();
     });
   }
@@ -269,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   bool _shouldShowDateFilter() {
-    return _currentSwipePage == 0 || _currentSwipePage == 1;
+    return _currentSwipePage == 0 || _currentSwipePage == 1 || _currentSwipePage == 2;
   }
 
   void _calculateCategoryBasedProfit() {
@@ -432,6 +474,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         totalExpenses: totalExpenses,
                         totalPurchase: totalPurchase,
                         totalDiscount: totalDiscount,
+                        totalScheme: totalScheme,
+                        totalCredit: totalCredit,
                         profit: profit,
                         netProfit: netProfit,
                         invoices: invoices,

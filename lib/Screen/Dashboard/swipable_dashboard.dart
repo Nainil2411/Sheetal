@@ -5,6 +5,7 @@ import 'package:sheetal/Screen/Dashboard/expense_tracker.dart';
 import 'package:sheetal/Screen/Dashboard/financial_overview.dart';
 import 'package:sheetal/Screen/Dashboard/monthly_comparision.dart';
 import 'package:sheetal/Screen/Dashboard/profit_chart.dart';
+import 'package:sheetal/Screen/Dashboard/calculation_summary.dart' as calc;
 import 'package:sheetal/Screen/Sheetal/Invoices/invoice.dart';
 import 'package:sheetal/Screen/Sheetal/category/category.dart';
 import 'package:sheetal/common/custom_color.dart';
@@ -15,6 +16,8 @@ class SwipableDashboardCards extends StatefulWidget {
   final double totalExpenses;
   final double totalPurchase;
   final double totalDiscount;
+  final double totalScheme;
+  final double totalCredit;
   final double profit;
   final double netProfit;
   final List<Invoice> invoices;
@@ -31,6 +34,8 @@ class SwipableDashboardCards extends StatefulWidget {
     required this.totalExpenses,
     required this.totalPurchase,
     required this.totalDiscount,
+    required this.totalScheme,
+    required this.totalCredit,
     required this.profit,
     required this.netProfit,
     required this.invoices,
@@ -113,6 +118,12 @@ class _SwipableDashboardCardsState extends State<SwipableDashboardCards> {
                 profit: widget.profit,
                 netProfit: widget.netProfit,
               ),
+              calc.MinimalCalculationCard(
+                totalPurchase: widget.totalPurchase,
+                totalCredit: widget.totalCredit,
+                totalScheme: widget.totalScheme,
+                totalDiscount: widget.totalDiscount,
+              ),
               MonthlyProfitCharts(
                 invoices: widget.invoices,
                 collections: widget.collections,
@@ -145,7 +156,7 @@ class _SwipableDashboardCardsState extends State<SwipableDashboardCards> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        5,
+        6,
         (index) => Container(
           width: 8.0,
           height: 8.0,

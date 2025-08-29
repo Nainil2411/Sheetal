@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
@@ -385,12 +384,12 @@ class ExpenseExportConfig extends ExportConfig<Expense> {
 
   @override
   List<String> get headers => [
-        'Sr. No.',
-        'Title',
-        'Amount (₹)',
-        'Date',
-        'Payment Mode',
-      ];
+    'Sr. No.',
+    'Title',
+    'Amount (₹)',
+    'Date',
+    'Payment Mode',
+  ];
 
   @override
   bool get showTotal => true;
