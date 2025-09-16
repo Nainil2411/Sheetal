@@ -6,7 +6,7 @@ import 'package:sheetal/common/custom_appbar.dart';
 import 'package:sheetal/common/custom_color.dart';
 import 'package:sheetal/common/elevated_button.dart';
 import 'package:sheetal/common/textformfield.dart';
-import 'package:sheetal/common/month_picker.dart';
+import 'package:sheetal/common/dateformat.dart';
 import 'package:sheetal/utils/firebase_service.dart';
 
 class EditCreditScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _EditCreditScreenState extends State<EditCreditScreen> {
   late final TextEditingController _noteController;
   final FirebaseService _firebaseService = FirebaseService();
 
-  DateTime? _selectedMonth;
+  DateTime? _selectedDate;
   bool _isLoading = false;
 
   @override
@@ -33,14 +33,18 @@ class _EditCreditScreenState extends State<EditCreditScreen> {
     _monthController = TextEditingController(text: widget.credit.month);
     _amountController = TextEditingController(text: widget.credit.amount.toString());
     _noteController = TextEditingController(text: widget.credit.notes ?? '');
-    _selectedMonth = _tryParseMonth(widget.credit.month);
+    _selectedDate = _tryParseExisting(widget.credit.month);
   }
 
-  DateTime? _tryParseMonth(String value) {
+  DateTime? _tryParseExisting(String value) {
     try {
-      return DateFormat('MMMM yyyy').parse(value);
+      return DateFormat('dd/MM/yyyy').parseStrict(value);
     } catch (_) {
-      return null;
+      try {
+        return DateFormat('MMMM yyyy').parse(value);
+      } catch (_) {
+        return null;
+      }
     }
   }
 
@@ -52,12 +56,17 @@ class _EditCreditScreenState extends State<EditCreditScreen> {
     super.dispose();
   }
 
-  Future<void> _pickMonth() async {
-    final picked = await showMonthYearPicker(context, initialDate: _selectedMonth ?? DateTime.now());
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
     if (picked != null) {
       setState(() {
-        _selectedMonth = DateTime(picked.year, picked.month);
-        _monthController.text = DateFormat('MMMM yyyy').format(_selectedMonth!);
+        _selectedDate = picked;
+        _monthController.text = AppDateFormat.format(picked);
       });
     }
   }
@@ -93,16 +102,16 @@ class _EditCreditScreenState extends State<EditCreditScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CustomTextFormField(
-                  title: 'Month*',
+                  title: AppStrings.date,
                   showTitle: true,
                   controller: _monthController,
-                  hintText: 'Select Month',
+                  hintText: AppStrings.selectDate,
                   showBorders: true,
                   borderColor: CustomColors.textSecondary.withOpacity(0.5),
                   readOnly: true,
-                  onTap: _pickMonth,
+                  onTap: _selectDate,
                   suffixIcon: const Icon(Icons.calendar_today),
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Please select month' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Please select a date' : null,
                 ),
                 const SizedBox(height: 16),
                 CustomTextFormField(

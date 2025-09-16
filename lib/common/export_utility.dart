@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:sheetal/Screen/Sheetal/collection/collection.dart';
 import 'package:sheetal/Screen/Sheetal/Invoices/invoice.dart';
 import 'package:sheetal/Screen/Sheetal/expense/expense.dart';
+import 'package:sheetal/Screen/Sheetal/discount/discount.dart';
+import 'package:sheetal/Screen/Sheetal/Purchase/purchase.dart';
 import 'package:sheetal/common/export_progress_dialog.dart';
 import 'package:intl/intl.dart';
 
@@ -295,6 +297,10 @@ class ExportConfigs {
   static final collectionConfig = CollectionExportConfig();
   static final invoiceConfig = InvoiceExportConfig();
   static final expenseConfig = ExpenseExportConfig();
+  static final discountConfig = DiscountExportConfig();
+  static final schemeConfig = SchemeExportConfig();
+  static final creditConfig = CreditExportConfig();
+  static final purchaseConfig = PurchaseExportConfig();
 }
 
 class CollectionExportConfig extends ExportConfig<Collection> {
@@ -411,5 +417,155 @@ class ExpenseExportConfig extends ExportConfig<Expense> {
   @override
   double calculateTotal(List<Expense> items) {
     return items.fold(0.0, (sum, e) => sum + e.amount);
+  }
+}
+
+class DiscountExportConfig extends ExportConfig<Discount> {
+  @override
+  String get title => 'Discounts Report';
+
+  @override
+  String get fileName => 'discounts_export';
+
+  @override
+  List<String> get headers => [
+    'Sr. No.',
+    'Month',
+    'Amount (₹)',
+    'Notes',
+  ];
+
+  @override
+  bool get showTotal => true;
+
+  @override
+  int get amountColumnIndex => 2;
+
+  @override
+  List<dynamic> getRowData(Discount discount) {
+    return [
+      '',
+      discount.month,
+      discount.amount,
+      discount.notes ?? '',
+    ];
+  }
+
+  @override
+  double calculateTotal(List<Discount> items) {
+    return items.fold(0.0, (sum, d) => sum + d.amount);
+  }
+}
+
+class SchemeExportConfig extends ExportConfig<Discount> {
+  @override
+  String get title => 'Schemes Report';
+
+  @override
+  String get fileName => 'schemes_export';
+
+  @override
+  List<String> get headers => [
+    'Sr. No.',
+    'Month',
+    'Amount (₹)',
+    'Notes',
+  ];
+
+  @override
+  bool get showTotal => true;
+
+  @override
+  int get amountColumnIndex => 2;
+
+  @override
+  List<dynamic> getRowData(Discount scheme) {
+    return [
+      '',
+      scheme.month,
+      scheme.amount,
+      scheme.notes ?? '',
+    ];
+  }
+
+  @override
+  double calculateTotal(List<Discount> items) {
+    return items.fold(0.0, (sum, d) => sum + d.amount);
+  }
+}
+
+class CreditExportConfig extends ExportConfig<Discount> {
+  @override
+  String get title => 'Credits Report';
+
+  @override
+  String get fileName => 'credits_export';
+
+  @override
+  List<String> get headers => [
+    'Sr. No.',
+    'Month',
+    'Amount (₹)',
+    'Notes',
+  ];
+
+  @override
+  bool get showTotal => true;
+
+  @override
+  int get amountColumnIndex => 2;
+
+  @override
+  List<dynamic> getRowData(Discount credit) {
+    return [
+      '',
+      credit.month,
+      credit.amount,
+      credit.notes ?? '',
+    ];
+  }
+
+  @override
+  double calculateTotal(List<Discount> items) {
+    return items.fold(0.0, (sum, d) => sum + d.amount);
+  }
+}
+
+class PurchaseExportConfig extends ExportConfig<Purchase> {
+  @override
+  String get title => 'Purchases Report';
+
+  @override
+  String get fileName => 'purchases_export';
+
+  @override
+  List<String> get headers => [
+    'Sr. No.',
+    'Date',
+    'Category',
+    'Amount (₹)',
+    'GRA Number',
+  ];
+
+  @override
+  bool get showTotal => true;
+
+  @override
+  int get amountColumnIndex => 3;
+
+  @override
+  List<dynamic> getRowData(Purchase purchase) {
+    return [
+      '',
+      purchase.date,
+      purchase.categoryName,
+      purchase.amount,
+      purchase.graNumber ?? '',
+    ];
+  }
+
+  @override
+  double calculateTotal(List<Purchase> items) {
+    return items.fold(0.0, (sum, p) => sum + p.amount);
   }
 }

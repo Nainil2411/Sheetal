@@ -4,6 +4,7 @@ class Purchase {
   String categoryId;
   String categoryName;
   double amount;
+  String? graNumber;
   DateTime? createdAt;
 
   Purchase({
@@ -12,6 +13,7 @@ class Purchase {
     required this.categoryId,
     required this.categoryName,
     required this.amount,
+    this.graNumber,
     this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class Purchase {
       'categoryId': categoryId,
       'categoryName': categoryName,
       'amount': amount,
+      'graNumber': graNumber,
       'createdAt': createdAt ?? DateTime.now(),
     };
   }
@@ -34,6 +37,7 @@ class Purchase {
       categoryId: map['categoryId'] ?? '',
       categoryName: map['categoryName'] ?? '',
       amount: (map['amount'] ?? 0.0).toDouble(),
+      graNumber: map['graNumber'],
       createdAt: map['createdAt']?.toDate(),
     );
   }

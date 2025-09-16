@@ -84,7 +84,7 @@ class _MonthlyComparisonCardState extends State<MonthlyComparisonCard> {
       final purchasesSnapshot = await purchasesStream.first;
       final expensesSnapshot = await expensesStream.first;
 
-      purchases = purchasesSnapshot;
+      purchases = purchasesSnapshot.cast<Purchase>();
       expenses = expensesSnapshot;
 
       _processData();

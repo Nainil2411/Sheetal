@@ -96,6 +96,8 @@ class _PurchaseDetailScreenState extends State<PurchaseDetailScreen> {
           detailRows: [
             DetailRow(label: 'Category', value: _purchase.categoryName),
             DetailRow(label: 'Date', value: _purchase.date),
+            if (_purchase.graNumber != null && _purchase.graNumber!.isNotEmpty)
+              DetailRow(label: 'GRA Number', value: _purchase.graNumber!),
           ],
         ),
       ),

@@ -312,6 +312,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   Future<void> _exportExpensesToExcel(BuildContext context) async {
     String? dateRangeText;
     if (_selectedDateRange != null) {
+
       dateRangeText = '${DateFormat("dd/MM/yyyy").format(_selectedDateRange!.start)} - ${DateFormat("dd/MM/yyyy").format(_selectedDateRange!.end)}';
     }
 

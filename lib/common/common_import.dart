@@ -13,6 +13,8 @@ import '../Screen/Sheetal/customer/customer_module.dart';
 import '../Screen/Sheetal/expense/expense.dart';
 import '../common/import_progress_dialog.dart';
 import '../utils/firebase_service.dart';
+import '../Screen/Sheetal/discount/discount.dart';
+import '../Screen/Sheetal/Purchase/purchase.dart';
 
 class ImportConfig<T> {
   final String entityName;
@@ -585,6 +587,226 @@ class ImportConfigs {
         return existing.title.toLowerCase() == (newData['title'] ?? '').toLowerCase() &&
             existing.amount == newAmount &&
             (existing.expenseDate ?? '') == formattedNewDate;
+      },
+    );
+  }
+
+  static ImportConfig<Discount> get discountConfig {
+    final firebaseService = FirebaseService();
+    return ImportConfig<Discount>(
+      entityName: "discounts",
+      requiredColumns: 3,
+      parseRow: (values) async {
+        return {
+          'month': values[0].trim(),
+          'amount': values[1].trim(),
+          'notes': values.length > 2 ? values[2].trim() : '',
+        };
+      },
+      processData: (data) async {
+        try {
+          final amountStr = data['amount'] ?? '0';
+          final amount = amountStr.isEmpty ? 0.0 : double.tryParse(amountStr) ?? 0.0;
+          await firebaseService.addDiscount(
+            Discount(
+              month: data['month'] ?? '',
+              amount: amount,
+              notes: (data['notes'] ?? '').isEmpty ? null : data['notes'],
+            ),
+          );
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getExistingData: () async {
+        try {
+          final snapshot = await firebaseService.discountCollection!.get();
+          return snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Discount.fromMap(data, doc.id);
+          }).toList();
+        } catch (e) {
+          return <Discount>[];
+        }
+      },
+      isDuplicate: (existing, newData) {
+        final newAmount = double.tryParse(newData['amount'] ?? '0') ?? 0.0;
+        return existing.month.toLowerCase() == (newData['month'] ?? '').toLowerCase() &&
+            existing.amount == newAmount;
+      },
+    );
+  }
+
+  static ImportConfig<Discount> get schemeConfig {
+    final firebaseService = FirebaseService();
+    return ImportConfig<Discount>(
+      entityName: "schemes",
+      requiredColumns: 3,
+      parseRow: (values) async {
+        return {
+          'month': values[0].trim(),
+          'amount': values[1].trim(),
+          'notes': values.length > 2 ? values[2].trim() : '',
+        };
+      },
+      processData: (data) async {
+        try {
+          final amountStr = data['amount'] ?? '0';
+          final amount = amountStr.isEmpty ? 0.0 : double.tryParse(amountStr) ?? 0.0;
+          await firebaseService.addScheme(
+            Discount(
+              month: data['month'] ?? '',
+              amount: amount,
+              notes: (data['notes'] ?? '').isEmpty ? null : data['notes'],
+            ),
+          );
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getExistingData: () async {
+        try {
+          final snapshot = await firebaseService.schemeCollection!.get();
+          return snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Discount.fromMap(data, doc.id);
+          }).toList();
+        } catch (e) {
+          return <Discount>[];
+        }
+      },
+      isDuplicate: (existing, newData) {
+        final newAmount = double.tryParse(newData['amount'] ?? '0') ?? 0.0;
+        return existing.month.toLowerCase() == (newData['month'] ?? '').toLowerCase() &&
+            existing.amount == newAmount;
+      },
+    );
+  }
+
+  static ImportConfig<Discount> get creditConfig {
+    final firebaseService = FirebaseService();
+    return ImportConfig<Discount>(
+      entityName: "credits",
+      requiredColumns: 3,
+      parseRow: (values) async {
+        return {
+          'month': values[0].trim(),
+          'amount': values[1].trim(),
+          'notes': values.length > 2 ? values[2].trim() : '',
+        };
+      },
+      processData: (data) async {
+        try {
+          final amountStr = data['amount'] ?? '0';
+          final amount = amountStr.isEmpty ? 0.0 : double.tryParse(amountStr) ?? 0.0;
+          await firebaseService.addCredit(
+            Discount(
+              month: data['month'] ?? '',
+              amount: amount,
+              notes: (data['notes'] ?? '').isEmpty ? null : data['notes'],
+            ),
+          );
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getExistingData: () async {
+        try {
+          final snapshot = await firebaseService.creditCollection!.get();
+          return snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Discount.fromMap(data, doc.id);
+          }).toList();
+        } catch (e) {
+          return <Discount>[];
+        }
+      },
+      isDuplicate: (existing, newData) {
+        final newAmount = double.tryParse(newData['amount'] ?? '0') ?? 0.0;
+        return existing.month.toLowerCase() == (newData['month'] ?? '').toLowerCase() &&
+            existing.amount == newAmount;
+      },
+    );
+  }
+
+  static ImportConfig<Purchase> get purchaseConfig {
+    final firebaseService = FirebaseService();
+    return ImportConfig<Purchase>(
+      entityName: "purchases",
+      requiredColumns: 4,
+      // Expected columns: Date, Category, Amount, GRA Number
+      parseRow: (values) async {
+        return {
+          'date': values[0].trim(),
+          'categoryName': values[1].trim(),
+          'amount': values[2].trim(),
+          'graNumber': values.length > 3 ? values[3].trim() : '',
+        };
+      },
+      processData: (data) async {
+        try {
+          final amountStr = data['amount'] ?? '0';
+          final amount = amountStr.isEmpty ? 0.0 : double.tryParse(amountStr) ?? 0.0;
+
+          // Normalize date to dd/MM/yyyy
+          DateTime parsedDate;
+          try {
+            parsedDate = DateFormat('MMM dd yyyy').parseStrict(data['date']!);
+          } catch (_) {
+            try {
+              parsedDate = DateFormat('yyyy-MM-dd').parseStrict(data['date']!);
+            } catch (_) {
+              try {
+                parsedDate = DateFormat('dd/MM/yyyy').parseStrict(data['date']!);
+              } catch (_) {
+                parsedDate = DateTime.now();
+              }
+            }
+          }
+          final formattedDate = DateFormat('dd/MM/yyyy').format(parsedDate);
+
+          // Look up category ID by name
+          String? categoryId;
+          if ((data['categoryName'] ?? '').isNotEmpty) {
+            categoryId = await _getCategoryIdByName(data['categoryName']!);
+          }
+
+          final purchaseMap = {
+            'date': formattedDate,
+            'categoryId': categoryId ?? '',
+            'categoryName': data['categoryName'] ?? '',
+            'amount': amount,
+            'graNumber': (data['graNumber'] ?? '').isEmpty ? null : data['graNumber'],
+            'createdAt': Timestamp.fromDate(parsedDate),
+          };
+
+          await firebaseService.purchaseCollection?.add(purchaseMap);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      getExistingData: () async {
+        try {
+          final snapshot = await firebaseService.purchaseCollection!.get();
+          return snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return Purchase.fromMap(data, doc.id);
+          }).toList();
+        } catch (e) {
+          return <Purchase>[];
+        }
+      },
+      isDuplicate: (existing, newData) {
+        final newAmount = double.tryParse(newData['amount'] ?? '0') ?? 0.0;
+        final normalizedDate = _formatDateForComparison(newData['date'] ?? '');
+        final newCategory = (newData['categoryName'] ?? '').toLowerCase();
+        return existing.categoryName.toLowerCase() == newCategory &&
+            existing.amount == newAmount &&
+            existing.date == normalizedDate;
       },
     );
   }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:sheetal/Screen/Sheetal/discount/discount.dart';
 import 'package:sheetal/common/app_string.dart';
 import 'package:sheetal/common/custom_appbar.dart';
 import 'package:sheetal/common/custom_color.dart';
 import 'package:sheetal/common/elevated_button.dart';
 import 'package:sheetal/common/textformfield.dart';
-import 'package:sheetal/common/month_picker.dart';
+import 'package:sheetal/common/dateformat.dart';
 import 'package:sheetal/utils/firebase_service.dart';
 
 class AddCreditScreen extends StatefulWidget {
@@ -23,7 +22,7 @@ class _AddCreditScreenState extends State<AddCreditScreen> {
   final _noteController = TextEditingController();
   final FirebaseService _firebaseService = FirebaseService();
 
-  DateTime? _selectedMonth;
+  DateTime? _selectedDate;
   bool _isLoading = false;
 
   @override
@@ -34,17 +33,17 @@ class _AddCreditScreenState extends State<AddCreditScreen> {
     super.dispose();
   }
 
-  Future<void> _pickMonth() async {
-    final now = DateTime.now();
-    final picked = await showMonthYearPicker(
-      context,
-      initialDate: _selectedMonth ?? now,
-      latestAllowed: DateTime(now.year, now.month),
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
     );
     if (picked != null) {
       setState(() {
-        _selectedMonth = DateTime(picked.year, picked.month);
-        _monthController.text = DateFormat('MMMM yyyy').format(_selectedMonth!);
+        _selectedDate = picked;
+        _monthController.text = AppDateFormat.format(picked);
       });
     }
   }
@@ -80,16 +79,16 @@ class _AddCreditScreenState extends State<AddCreditScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CustomTextFormField(
-                  title: 'Month*',
+                  title: AppStrings.date,
                   showTitle: true,
                   controller: _monthController,
-                  hintText: 'Select Month',
+                  hintText: AppStrings.selectDate,
                   showBorders: true,
                   borderColor: CustomColors.textSecondary.withOpacity(0.5),
                   readOnly: true,
-                  onTap: _pickMonth,
+                  onTap: _selectDate,
                   suffixIcon: const Icon(Icons.calendar_today),
-                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Please select month' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Please select a date' : null,
                 ),
                 const SizedBox(height: 16),
                 CustomTextFormField(

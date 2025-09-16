@@ -23,13 +23,14 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _dateController = TextEditingController();
+  final _graNumberController = TextEditingController();
   final FirebaseService _firebaseService = FirebaseService();
 
   bool _isLoading = false;
   bool _validateForm = false; // Add this validation trigger
   List<Category> _categories = [];
   Category? _selectedCategory;
-  String? _categoryError; // Add error text for category
+  String? _categoryError;
 
   @override
   void initState() {
@@ -78,6 +79,7 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
   void dispose() {
     _amountController.dispose();
     _dateController.dispose();
+    _graNumberController.dispose();
     super.dispose();
   }
 
@@ -107,6 +109,9 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
         categoryId: _selectedCategory!.id!,
         categoryName: _selectedCategory!.name,
         amount: double.parse(_amountController.text.trim()),
+        graNumber: _graNumberController.text.trim().isEmpty
+            ? null
+            : _graNumberController.text.trim(),
         createdAt: DateTime.now(),
       );
 
@@ -144,6 +149,29 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Date
+                CustomTextFormField(
+                  title: AppStrings.date,
+                  showTitle: true,
+                  controller: _dateController,
+                  hintText: AppStrings.selectDate,
+                  showBorders: true,
+                  errorText: '',
+                  onChanged: (value) {},
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please select a date';
+                    }
+                    return null;
+                  },
+                  readOnly: true,
+                  onTap: () {
+                    _selectDate(context);
+                  },
+                  suffixIcon: Icon(Icons.calendar_today),
+                ),
+                const SizedBox(height: 16),
+                // Category
                 CustomDropdown<Category>(
                   showTitle: true,
                   title: AppStrings.category,
@@ -188,6 +216,29 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
                     ),
                   ),
                 const SizedBox(height: 16),
+                // GRA Number
+                CustomTextFormField(
+                  controller: _graNumberController,
+                  hintText: 'Enter GRA number',
+                  keyboardType: TextInputType.number,
+                  showTitle: true,
+                  title: 'GRA Number',
+                  validator: (value) {
+                    // Only validate when _validateForm is true (after save button is pressed)
+                    if (_validateForm) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter GRA number';
+                      }
+                      // Check if it's numeric
+                      final numeric = RegExp(r'^\d+$');
+                      if (!numeric.hasMatch(value.trim())) {
+                        return 'Enter a valid numeric GRA number';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 CustomTextFormField(
                   controller: _amountController,
                   hintText: AppStrings.amountrequire,
@@ -208,27 +259,6 @@ class _AddPurchaseScreenState extends State<AddPurchaseScreen> {
                     }
                     return null;
                   },
-                ),
-                const SizedBox(height: 16),
-                CustomTextFormField(
-                  title: AppStrings.date,
-                  showTitle: true,
-                  controller: _dateController,
-                  hintText: AppStrings.selectDate,
-                  showBorders: true,
-                  errorText: '',
-                  onChanged: (value) {},
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please select a date';
-                    }
-                    return null;
-                  },
-                  readOnly: true,
-                  onTap: () {
-                    _selectDate(context);
-                  },
-                  suffixIcon: Icon(Icons.calendar_today),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(

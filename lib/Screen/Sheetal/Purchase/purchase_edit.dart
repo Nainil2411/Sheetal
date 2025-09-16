@@ -27,6 +27,7 @@ class _EditPurchaseScreenState extends State<EditPurchaseScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   late TextEditingController _amountController;
   late TextEditingController _dateController;
+  late TextEditingController _graNumberController;
   bool _isLoading = false;
   List<Category> _categories = [];
   Category? _selectedCategory;
@@ -36,6 +37,7 @@ class _EditPurchaseScreenState extends State<EditPurchaseScreen> {
     super.initState();
     _amountController = TextEditingController(text: widget.purchase.amount.toString());
     _dateController = TextEditingController(text: widget.purchase.date);
+    _graNumberController = TextEditingController(text: widget.purchase.graNumber ?? '');
     _loadCategories();
   }
 
@@ -93,6 +95,7 @@ class _EditPurchaseScreenState extends State<EditPurchaseScreen> {
   void dispose() {
     _amountController.dispose();
     _dateController.dispose();
+    _graNumberController.dispose();
     super.dispose();
   }
 
@@ -107,6 +110,9 @@ class _EditPurchaseScreenState extends State<EditPurchaseScreen> {
         amount: double.parse(_amountController.text.trim()),
         createdAt: widget.purchase.createdAt,
         date: _dateController.text,
+        graNumber: _graNumberController.text.trim().isEmpty
+            ? null
+            : _graNumberController.text.trim(),
       );
 
       final success = await _firebaseService.updatePurchase(updatedPurchase);
@@ -129,89 +135,111 @@ class _EditPurchaseScreenState extends State<EditPurchaseScreen> {
           ? Utility.circleloading()
           : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CustomDropdown<Category>(
-                showTitle: true,
-                title: AppStrings.category,
-                hint: AppStrings.selectCategory,
-                value: _selectedCategory,
-                getSearchText: (category) => category.name,
-                items: _categories.isEmpty
-                    ? [
-                  DropdownMenuItem<Category>(
-                    value: null,
-                    child: Text(AppStrings.nocategoryfound),
-                  ),
-                ]
-                    : _categories.map((category) {
-                  return DropdownMenuItem<Category>(
-                    value: category,
-                    child: Text(category.name),
-                  );
-                }).toList(),
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedCategory = newValue;
-                  });
-                },
-                validator: (value) =>
-                value == null ? AppStrings.selectCategory : null,
-                selectedItemBuilder: (category) =>
-                    Text(category?.name ?? AppStrings.selectCategory),
-              ),
-              const SizedBox(height: 16),
-              CustomTextFormField(
-                controller: _amountController,
-                hintText: AppStrings.amountrequire,
-                keyboardType: TextInputType.number,
-                showTitle: true,
-                title: AppStrings.amount,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return AppStrings.amountrequire;
-                  }
-                  try {
-                    final amount = double.parse(value);
-                    if (amount <= 0) {
-                      return 'Amount must be greater than zero';
-                    }
-                  } catch (e) {
-                    return AppStrings.amountrequire;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CustomTextFormField(
-                title: AppStrings.date,
-                showTitle: true,
-                controller: _dateController,
-                hintText: AppStrings.selectDate,
-                showBorders: true,
-                errorText: '',
-                onChanged: (value) {},
-                readOnly: true,
-                onTap: () {
-                  _selectDate(context);
-                },
-                suffixIcon: Icon(Icons.calendar_today),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: CustomElevatedButton(
-                  label: AppStrings.update,
-                  onPressed: _updatePurchase,
-                  borderRadius: 12,
-                  isLoading: _isLoading,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Date first
+                CustomTextFormField(
+                  title: AppStrings.date,
+                  showTitle: true,
+                  controller: _dateController,
+                  hintText: AppStrings.selectDate,
+                  showBorders: true,
+                  errorText: '',
+                  onChanged: (value) {},
+                  readOnly: true,
+                  onTap: () {
+                    _selectDate(context);
+                  },
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                // Category second
+                CustomDropdown<Category>(
+                  showTitle: true,
+                  title: AppStrings.category,
+                  hint: AppStrings.selectCategory,
+                  value: _selectedCategory,
+                  getSearchText: (category) => category.name,
+                  items: _categories.isEmpty
+                      ? [
+                    DropdownMenuItem<Category>(
+                      value: null,
+                      child: Text(AppStrings.nocategoryfound),
+                    ),
+                  ]
+                      : _categories.map((category) {
+                    return DropdownMenuItem<Category>(
+                      value: category,
+                      child: Text(category.name),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedCategory = newValue;
+                    });
+                  },
+                  validator: (value) =>
+                  value == null ? AppStrings.selectCategory : null,
+                  selectedItemBuilder: (category) =>
+                      Text(category?.name ?? AppStrings.selectCategory),
+                ),
+                const SizedBox(height: 16),
+                // GRA Number third
+                CustomTextFormField(
+                  controller: _graNumberController,
+                  hintText: 'Enter GRA number',
+                  keyboardType: TextInputType.number,
+                  showTitle: true,
+                  title: 'GRA Number',
+                  validator: (value) {
+                    if (value != null && value.trim().isNotEmpty) {
+                      final numeric = RegExp(r'^\d{1,}$');
+                      if (!numeric.hasMatch(value.trim())) {
+                        return 'Enter a valid numeric GRA number';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                CustomTextFormField(
+                  controller: _amountController,
+                  hintText: AppStrings.amountrequire,
+                  keyboardType: TextInputType.number,
+                  showTitle: true,
+                  title: AppStrings.amount,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return AppStrings.amountrequire;
+                    }
+                    try {
+                      final amount = double.parse(value);
+                      if (amount <= 0) {
+                        return 'Amount must be greater than zero';
+                      }
+                    } catch (e) {
+                      return AppStrings.amountrequire;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: CustomElevatedButton(
+                    label: AppStrings.update,
+                    onPressed: _updatePurchase,
+                    borderRadius: 12,
+                    isLoading: _isLoading,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
