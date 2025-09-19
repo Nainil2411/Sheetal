@@ -76,19 +76,37 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
     );
   }
 
-
   void _loadCollections() {
     _collectionsSubscription?.cancel();
     _collectionsSubscription =
         _firebaseService.getCollections().listen((collections) {
-      if (mounted) {
-        setState(() {
-          _allCollections = collections;
-          _filterCollections(_searchText);
-          _isLoading = false;
+          if (mounted) {
+            setState(() {
+              _allCollections = _sortCollectionsByDate(collections);
+              _filterCollections(_searchText);
+              _isLoading = false;
+            });
+          }
         });
+  }
+
+  // Helper method to sort collections by date (latest first)
+  List<Collection> _sortCollectionsByDate(List<Collection> collections) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    List<Collection> sortedCollections = List.from(collections);
+    sortedCollections.sort((a, b) {
+      try {
+        final dateA = dateFormat.parse(a.date);
+        final dateB = dateFormat.parse(b.date);
+        return dateB.compareTo(dateA); // Latest first (descending order)
+      } catch (e) {
+        // If there's an error parsing dates, maintain original order
+        return 0;
       }
     });
+
+    return sortedCollections;
   }
 
   void _toggleSelection(Collection collection) {
@@ -107,7 +125,6 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
   double _calculateTotalAmount() {
     return _filteredCollections.fold(0.0, (sum, collection) => sum + collection.amount);
   }
-
 
   void _enterSelectionMode(Collection collection) {
     setState(() {
@@ -149,7 +166,7 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
 
     setState(() {
       _searchText = searchText.toLowerCase();
-      _filteredCollections = _allCollections.where((collection) {
+      List<Collection> filtered = _allCollections.where((collection) {
         final matchesSearch =
             collection.customerName.toLowerCase().contains(_searchText) ||
                 collection.paymentMode.toLowerCase().contains(_searchText);
@@ -157,6 +174,9 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
         final matchesPaymentMode = _matchesPaymentModeFilter(collection);
         return matchesSearch && matchesDateRange && matchesPaymentMode;
       }).toList();
+
+      // Sort filtered results by date as well (latest first)
+      _filteredCollections = _sortCollectionsByDate(filtered);
     });
   }
 
@@ -164,7 +184,7 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
     if (_selectedPaymentModes.isEmpty) return true;
 
     return _selectedPaymentModes.any(
-        (mode) => collection.paymentMode.toLowerCase() == mode.toLowerCase());
+            (mode) => collection.paymentMode.toLowerCase() == mode.toLowerCase());
   }
 
   void _showDateRangePicker() async {
@@ -240,7 +260,7 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
       );
 
       return (collectionDate.isAfter(_selectedDateRange!.start) ||
-              collectionDate.isAtSameMomentAs(_selectedDateRange!.start)) &&
+          collectionDate.isAtSameMomentAs(_selectedDateRange!.start)) &&
           (collectionDate.isBefore(endDate) ||
               collectionDate.isAtSameMomentAs(endDate));
     } catch (e) {
@@ -266,15 +286,15 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
   void _selectAllCollection() {
     setState(() {
       _selectedCollectionIds.clear();
-      for (final invoice in _filteredCollections) {
-        if (invoice.id != null) {
-          _selectedCollectionIds.add(invoice.id!);
+      for (final collection in _filteredCollections) {
+        if (collection.id != null) {
+          _selectedCollectionIds.add(collection.id!);
         }
       }
     });
   }
 
-  // NEW: Deselect all invoices
+  // NEW: Deselect all collections
   void _deselectAllCollection() {
     setState(() {
       _selectedCollectionIds.clear();
@@ -336,13 +356,13 @@ class _CollectionListScreenState extends State<CollectionListScreen> {
     return chips.isEmpty
         ? const SizedBox.shrink()
         : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.grey[50],
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: chips),
-            ),
-          );
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.grey[50],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: chips),
+      ),
+    );
   }
 
   @override

@@ -45,12 +45,31 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     _firebaseService.getInvoices().listen((invoices) {
       if (mounted) {
         setState(() {
-          _allInvoices = invoices;
+          _allInvoices = _sortInvoicesByDate(invoices);
           _filterInvoices(_searchText);
           _isLoading = false;
         });
       }
     });
+  }
+
+  // Helper method to sort invoices by date (latest first)
+  List<Invoice> _sortInvoicesByDate(List<Invoice> invoices) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    List<Invoice> sortedInvoices = List.from(invoices);
+    sortedInvoices.sort((a, b) {
+      try {
+        final dateA = dateFormat.parse(a.date);
+        final dateB = dateFormat.parse(b.date);
+        return dateB.compareTo(dateA); // Latest first (descending order)
+      } catch (e) {
+        // If there's an error parsing dates, maintain original order
+        return 0;
+      }
+    });
+
+    return sortedInvoices;
   }
 
   void _toggleSelection(Invoice invoice) {
@@ -79,7 +98,6 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       dateRangeText: dateRangeText,
     );
   }
-
 
   void _enterSelectionMode(Invoice invoice) {
     setState(() {
@@ -119,13 +137,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
   void _filterInvoices(String searchText) {
     setState(() {
       _searchText = searchText.toLowerCase();
-      _filteredInvoices = _allInvoices.where((invoice) {
+      List<Invoice> filtered = _allInvoices.where((invoice) {
         final matchesSearch =
             invoice.customerName.toLowerCase().contains(_searchText) ||
                 invoice.categoryName.toLowerCase().contains(_searchText);
         final matchesDateRange = _isInDateRange(invoice);
         return matchesSearch && matchesDateRange;
       }).toList();
+
+      // Sort filtered results by date as well (latest first)
+      _filteredInvoices = _sortInvoicesByDate(filtered);
     });
   }
 

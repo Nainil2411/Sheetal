@@ -29,6 +29,8 @@ class _CreditListScreenState extends State<CreditListScreen> {
   String _searchText = '';
   Stream<List<Discount>>? _stream;
   bool _sortAscending = false;
+  List<Discount> _allCredits = [];
+  List<Discount> _filteredCredits = [];
 
   @override
   void initState() {
@@ -37,6 +39,55 @@ class _CreditListScreenState extends State<CreditListScreen> {
     _searchController.addListener(() {
       setState(() => _searchText = _searchController.text.toLowerCase());
     });
+    _loadCredits();
+  }
+
+  void _loadCredits() {
+    _stream?.listen((credits) {
+      if (mounted) {
+        setState(() {
+          _allCredits = _sortCreditsByDate(credits);
+          _filteredCredits = _allCredits.where((d) => d.month.toLowerCase().contains(_searchText)).toList();
+        });
+      }
+    });
+  }
+
+  // Helper method to sort credits by date (latest first)
+  List<Discount> _sortCreditsByDate(List<Discount> credits) {
+    final dateFormat = DateFormat('MMMM yyyy');
+
+    List<Discount> sortedCredits = List.from(credits);
+    sortedCredits.sort((a, b) {
+      try {
+        final dateA = dateFormat.parse(a.month);
+        final dateB = dateFormat.parse(b.month);
+        return dateB.compareTo(dateA); // Latest first (descending order)
+      } catch (e) {
+        // If there's an error parsing dates, maintain original order
+        return 0;
+      }
+    });
+
+    return sortedCredits;
+  }
+
+  Future<void> _importCreditsFromFile(BuildContext context) async {
+    await ImportUtility.importFromFile<Discount>(
+      context: context,
+      config: ImportConfigs.creditConfig,
+      onComplete: () {
+        setState(() {});
+      },
+    );
+  }
+
+  Future<void> _exportCreditsToExcel(BuildContext context) async {
+    await ExportUtility.exportToExcel<Discount>(
+      context: context,
+      data: _filteredCredits,
+      config: ExportConfigs.creditConfig,
+    );
   }
 
   @override
@@ -60,11 +111,11 @@ class _CreditListScreenState extends State<CreditListScreen> {
             return Center(child: Text(AppStrings.genericError + snapshot.error.toString()));
           }
 
-          final items = (snapshot.data ?? [])
+          final items = (_sortCreditsByDate(snapshot.data ?? []))
               .where((d) => d.month.toLowerCase().contains(_searchText))
               .toList();
 
-          int _compareByMonth(Discount a, Discount b) {
+          int compareByMonth(Discount a, Discount b) {
             DateTime? parseMonth(String s) {
               try {
                 return DateFormat('MMMM yyyy').parse(s);
@@ -82,7 +133,7 @@ class _CreditListScreenState extends State<CreditListScreen> {
           }
 
           final sorted = [...items];
-          sorted.sort((a, b) => _sortAscending ? _compareByMonth(a, b) : _compareByMonth(b, a));
+          sorted.sort((a, b) => _sortAscending ? compareByMonth(a, b) : compareByMonth(b, a));
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 80),
@@ -129,31 +180,14 @@ class _CreditListScreenState extends State<CreditListScreen> {
               children: [
                 FloatingActionButton(
                   heroTag: 'importCreditFab',
-                  onPressed: () async {
-                    await ImportUtility.importFromFile<Discount>(
-                      context: context,
-                      config: ImportConfigs.creditConfig,
-                      onComplete: () {
-                        setState(() {});
-                      },
-                    );
-                  },
+                  onPressed: () => _importCreditsFromFile(context),
                   backgroundColor: CustomColors.textSecondary,
                   child: const Icon(Icons.upload_file, color: Colors.white),
                 ),
                 const SizedBox(width: 10),
                 FloatingActionButton(
                   heroTag: 'exportCreditFab',
-                  onPressed: () async {
-                    // Build filtered list similar to scheme/discount usage
-                    final items = (await _stream?.first) ?? [];
-                    List<Discount> filtered = items.where((d) => d.month.toLowerCase().contains(_searchText)).toList();
-                    await ExportUtility.exportToExcel<Discount>(
-                      context: context,
-                      data: filtered,
-                      config: ExportConfigs.creditConfig,
-                    );
-                  },
+                  onPressed: () => _exportCreditsToExcel(context),
                   backgroundColor: CustomColors.textSecondary,
                   child: const Icon(Icons.download, color: Colors.white),
                 ),
@@ -175,5 +209,3 @@ class _CreditListScreenState extends State<CreditListScreen> {
     );
   }
 }
-
-

@@ -47,12 +47,31 @@ class _SchemeListScreenState extends State<SchemeListScreen> {
     _stream?.listen((schemes) {
       if (mounted) {
         setState(() {
-          _allSchemes = schemes;
+          _allSchemes = _sortSchemesByDate(schemes);
           _filteredSchemes = _allSchemes.where((d) => d.month.toLowerCase().contains(_searchText)).toList();
           _isLoading = false;
         });
       }
     });
+  }
+
+  // Helper method to sort schemes by date (latest first)
+  List<Discount> _sortSchemesByDate(List<Discount> schemes) {
+    final dateFormat = DateFormat('MMMM yyyy');
+
+    List<Discount> sortedSchemes = List.from(schemes);
+    sortedSchemes.sort((a, b) {
+      try {
+        final dateA = dateFormat.parse(a.month);
+        final dateB = dateFormat.parse(b.month);
+        return dateB.compareTo(dateA); // Latest first (descending order)
+      } catch (e) {
+        // If there's an error parsing dates, maintain original order
+        return 0;
+      }
+    });
+
+    return sortedSchemes;
   }
 
   Future<void> _importSchemesFromFile(BuildContext context) async {
@@ -94,7 +113,7 @@ class _SchemeListScreenState extends State<SchemeListScreen> {
             return Center(child: Text(AppStrings.genericError + snapshot.error.toString()));
           }
 
-          final items = (snapshot.data ?? [])
+          final items = (_sortSchemesByDate(snapshot.data ?? []))
               .where((d) => d.month.toLowerCase().contains(_searchText))
               .toList();
 
@@ -192,5 +211,3 @@ class _SchemeListScreenState extends State<SchemeListScreen> {
     );
   }
 }
-
-

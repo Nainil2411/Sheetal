@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sheetal/Screen/Sheetal/discount/discount.dart';
 import 'package:sheetal/utils/utility.dart';
 
 import '../Screen/Sheetal/Invoices/invoice.dart';
@@ -13,7 +14,7 @@ import '../Screen/Sheetal/customer/customer_module.dart';
 import '../Screen/Sheetal/expense/expense.dart';
 import '../common/import_progress_dialog.dart';
 import '../utils/firebase_service.dart';
-import '../Screen/Sheetal/discount/discount.dart';
+import '../Screen/Sheetal/discount/discount.dart' hide Discount;
 import '../Screen/Sheetal/Purchase/purchase.dart';
 
 class ImportConfig<T> {

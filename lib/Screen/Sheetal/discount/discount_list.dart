@@ -47,12 +47,31 @@ class _DiscountListScreenState extends State<DiscountListScreen> {
     _stream?.listen((discounts) {
       if (mounted) {
         setState(() {
-          _allDiscounts = discounts;
+          _allDiscounts = _sortDiscountsByDate(discounts);
           _filteredDiscounts = _allDiscounts.where((d) => d.month.toLowerCase().contains(_searchText)).toList();
           _isLoading = false;
         });
       }
     });
+  }
+
+  // Helper method to sort discounts by date (latest first)
+  List<Discount> _sortDiscountsByDate(List<Discount> discounts) {
+    final dateFormat = DateFormat('MMMM yyyy');
+
+    List<Discount> sortedDiscounts = List.from(discounts);
+    sortedDiscounts.sort((a, b) {
+      try {
+        final dateA = dateFormat.parse(a.month);
+        final dateB = dateFormat.parse(b.month);
+        return dateB.compareTo(dateA); // Latest first (descending order)
+      } catch (e) {
+        // If there's an error parsing dates, maintain original order
+        return 0;
+      }
+    });
+
+    return sortedDiscounts;
   }
 
   Future<void> _importDiscountsFromFile(BuildContext context) async {
@@ -94,7 +113,7 @@ class _DiscountListScreenState extends State<DiscountListScreen> {
             return Center(child: Text(AppStrings.genericError + snapshot.error.toString()));
           }
 
-          final items = (snapshot.data ?? [])
+          final items = (_sortDiscountsByDate(snapshot.data ?? []))
               .where((d) => d.month.toLowerCase().contains(_searchText))
               .toList();
 
@@ -192,5 +211,3 @@ class _DiscountListScreenState extends State<DiscountListScreen> {
     );
   }
 }
-
-
